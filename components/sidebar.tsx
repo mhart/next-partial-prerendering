@@ -69,9 +69,10 @@ export function Sidebar() {
             >
               Partial Prerendering
             </a>{' '}
-            combines ultra-quick static edge delivery with fully dynamic
-            capabilities. This is different from how your application behaves
-            today, where entire routes are either fully static or dynamic.
+            at {new Date().toISOString()} combines ultra-quick static edge
+            delivery with fully dynamic capabilities. This is different from how
+            your application behaves today, where entire routes are either fully
+            static or dynamic.
           </p>
           <p>How it works:</p>
           <ul>
