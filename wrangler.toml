@@ -1,0 +1,25 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "commerce-node"
+main = ".next/standalone/worker.mjs"
+# assets = ".next/assets"
+compatibility_date = "2024-09-01"
+compatibility_flags = ["nodejs_compat_v2"]
+workers_dev = true
+minify = false
+
+[experimental_assets]
+directory = ".next/assets"
+
+[alias]
+"critters" = "./scripts/shim-throw.mjs"
+"@opentelemetry/api" = "./scripts/shim-throw.mjs"
+"next/dist/compiled/@ampproject/toolbox-optimizer" = "./scripts/shim-throw.mjs"
+"next/dist/experimental/testmode/server" = "./scripts/shim-throw.mjs"
+"next/dist/compiled/ws" = "./scripts/shim-throw.mjs"
+"next/dist/compiled/node-html-parser" = "./scripts/shim-node-html-parser.mjs"
+"@next/env" = "./scripts/shim-throw.mjs"
+"next/dist/compiled/jsonwebtoken" = "./scripts/shim-throw.mjs"
+"./cjs/react-dom-server-legacy.browser.development.js" = "./scripts/shim-throw.mjs"
+"./cjs/react-dom-server.browser.development.js" = "./scripts/shim-throw.mjs"
+"./cjs/react.development.js" = "./scripts/shim-throw.mjs"
+"./cjs/react-jsx-runtime.development.js" = "./scripts/shim-throw.mjs"
