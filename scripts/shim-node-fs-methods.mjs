@@ -4,11 +4,15 @@ export const nodeFs = {
   readFileSync,
   writeFile,
   mkdir,
-  stat
+  stat,
 };
 
 function existsSync(path) {
-  console.log('existsSync', path, new Error().stack.split('\n').slice(1).join('\n'));
+  console.log(
+    'existsSync',
+    path,
+    new Error().stack.split('\n').slice(1).join('\n')
+  );
   return typeof globalThis.MY_FILE_CACHE[path] === 'string';
 }
 
@@ -16,7 +20,7 @@ async function readFile(path, options) {
   console.log(
     'readFile',
     { path, options }
-    // new Error().stack.split("\n").slice(1).join("\n"),
+    // new Error().stack.split('\n').slice(1).join('\n')
   );
   if (typeof globalThis.MY_FILE_CACHE[path] !== 'string') {
     throw new Error(path + 'does not exist');

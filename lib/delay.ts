@@ -1,6 +1,6 @@
 // Times are in milliseconds
-export const delayShippingEstimate = 200;
-export const delayRecommendedProducts = 500;
+export const delayShippingEstimate = 400;
+export const delayRecommendedProducts = 2000;
 export const delayReviews = 600;
 
 export async function withDelay<T>(

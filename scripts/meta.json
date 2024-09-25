@@ -4236,7 +4236,7 @@
       "format": "cjs"
     },
     "scripts/shim-node-fs-methods.mjs": {
-      "bytes": 1433,
+      "bytes": 1449,
       "imports": [
         {
           "path": "<define:globalThis.__NEXT_HTTP_AGENT>",
@@ -4665,7 +4665,7 @@
       "format": "cjs"
     },
     "scripts/index.ts": {
-      "bytes": 2556,
+      "bytes": 3186,
       "imports": [
         {
           "path": "node:stream",
@@ -5463,7 +5463,7 @@
           "bytesInOutput": 747
         },
         "scripts/shim-node-fs-methods.mjs": {
-          "bytesInOutput": 1701
+          "bytesInOutput": 1716
         },
         "node_modules/.pnpm/next@15.0.0-canary.139_react-dom@19.0.0-rc-7771d3a7-20240827_react@19.0.0-rc-7771d3a7-2024082_i2cpfhdvdccchlnfmiijprg57i/node_modules/next/dist/server/lib/module-loader/node-module-loader.js": {
           "bytesInOutput": 819
@@ -5490,10 +5490,10 @@
           "bytesInOutput": 48970
         },
         "scripts/index.ts": {
-          "bytesInOutput": 6589
+          "bytesInOutput": 7084
         }
       },
-      "bytes": 837743
+      "bytes": 1087641
     }
   }
 }
