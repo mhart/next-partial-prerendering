@@ -1,14 +1,14 @@
 #:schema node_modules/wrangler/config-schema.json
-name = "commerce-node"
+name = "next-ppr"
 main = ".next/standalone/worker.mjs"
-# assets = ".next/assets"
+legacy_assets = ".next/assets"
 compatibility_date = "2024-09-01"
 compatibility_flags = ["nodejs_compat_v2"]
 workers_dev = true
 minify = false
 
-[experimental_assets]
-directory = ".next/assets"
+# [experimental_assets]
+# directory = ".next/assets"
 
 [alias]
 "critters" = "./scripts/shim-throw.mjs"
