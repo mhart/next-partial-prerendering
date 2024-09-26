@@ -19,24 +19,65 @@ execSync(`cp -R ${BASE_DIR}/static ${BASE_DIR}/assets/_next/`);
 if (existsSync(`${REPO_ROOT}/public`)) {
   execSync(`cp -R ${REPO_ROOT}/public/* ${BASE_DIR}/assets/`);
 }
+execSync(`mkdir -p ${BASE_DIR}/assets/cdn-cgi/app`);
 
 const nextConfigStr = readFileSync(APP_BASE_DIR + '/server.js', 'utf8').match(
   /const nextConfig = ({.+?})\n/
 )[1];
 
-let cacheEntries = Object.create(null);
+const metaEntries = globSync(globSync(`${NEXT_SERVER_DIR}/app/**/*.meta`)).reduce((acc, file) => {
+  acc[file.replace(NEXT_SERVER_DIR, '')] = JSON.parse(readFileSync(file, 'utf-8'));
+  return acc;
+}, Object.create(null));
 
-const cacheFileGlobs = [
+const hiddenAssetFiles = [];
+
+const prerenderFileGlobs = [
   `${NEXT_SERVER_DIR}/app/**/*.html`,
-  `${NEXT_SERVER_DIR}/app/**/*.rsc`,
-  `${NEXT_SERVER_DIR}/app/**/*.meta`
+  `${NEXT_SERVER_DIR}/app/**/*.body`,
+  `${NEXT_SERVER_DIR}/app/**/*.rsc`
 ];
-for (const cacheFileGlob of cacheFileGlobs) {
-  cacheEntries = globSync(cacheFileGlob).reduce((acc, file) => {
-    acc[file.replace(APP_BASE_DIR, '')] = readFileSync(file, 'utf-8');
-    return acc;
-  }, cacheEntries);
+for (const prerenderFileGlob of prerenderFileGlobs) {
+  for (const prerenderFile of globSync(prerenderFileGlob)) {
+    hiddenAssetFiles.push(prerenderFile);
+  }
 }
+
+const pagesManifestFile = NEXT_SERVER_DIR + '/pages-manifest.json';
+const appPathsManifestFile = NEXT_SERVER_DIR + '/app-paths-manifest.json';
+
+const pagesManifestFiles = existsSync(pagesManifestFile)
+  ? Object.values(JSON.parse(readFileSync(pagesManifestFile, 'utf-8'))).map(
+      (file) => '.next/server/' + file
+    )
+  : [];
+const appPathsManifestFiles = existsSync(appPathsManifestFile)
+  ? Object.values(JSON.parse(readFileSync(appPathsManifestFile, 'utf-8'))).map(
+      (file) => '.next/server/' + file
+    )
+  : [];
+const allManifestFiles = pagesManifestFiles.concat(appPathsManifestFiles);
+
+const htmlPages = allManifestFiles.filter((file) => file.endsWith('.html'));
+const pageModules = allManifestFiles.filter((file) => file.endsWith('.js'));
+
+for (const htmlPage of htmlPages) {
+  hiddenAssetFiles.push(APP_BASE_DIR + '/' + htmlPage);
+}
+
+for (const hiddenAssetFile of hiddenAssetFiles) {
+  // TODO: do this using Node.js methods
+  const dest = `${BASE_DIR}/assets/cdn-cgi/${hiddenAssetFile
+    .replace(NEXT_SERVER_DIR, '')
+    .slice(1)}`;
+  execSync(`mkdir -p ${path.dirname(dest)}`);
+  execSync(`cp ${hiddenAssetFile} ${dest}`);
+}
+
+const buildId = readFileSync(NEXT_DIR + '/BUILD_ID', 'utf-8').trim();
+
+const routesManifest = readFileSync(NEXT_DIR + '/routes-manifest.json', 'utf-8').trim();
+const prerenderManifest = readFileSync(NEXT_DIR + '/prerender-manifest.json', 'utf-8').trim();
 
 let replaceRelativePlugin = {
   name: 'replaceRelative',
@@ -49,13 +90,17 @@ let replaceRelativePlugin = {
     build.onResolve({ filter: /\.\/web\/sandbox$/ }, (args) => ({
       path: path.join(import.meta.dirname, './shim-empty.mjs')
     }));
-    // // No need for supporting previews and jsonwebtoken
+    // No need for fs
+    build.onResolve({ filter: /\.\/lib\/node-fs-methods$/ }, (args) => ({
+      path: path.join(import.meta.dirname, './shim-empty.mjs')
+    }));
+    // No need for filesystem cache
+    build.onResolve({ filter: /\.\/file-system-cache$/ }, (args) => ({
+      path: path.join(import.meta.dirname, './shim-empty.mjs')
+    }));
+    // No need for supporting previews and jsonwebtoken
     build.onResolve({ filter: /\.\/api-utils\/node\/try-get-preview-data$/ }, (args) => ({
       path: path.join(import.meta.dirname, './shim-try-get-preview-data.mjs')
-    }));
-    // Use in-memory fs methods for now
-    build.onResolve({ filter: /\.\/lib\/node-fs-methods$/ }, (args) => ({
-      path: path.join(import.meta.dirname, './shim-node-fs-methods.mjs')
     }));
   }
 };
@@ -91,12 +136,12 @@ const result = await esbuild.build({
     'process.env.NODE_ENV': '"production"',
     'process.env.NEXT_MINIMAL': 'true',
     'process.env.NEXT_PRIVATE_MINIMAL_MODE': 'true',
-    // 'process.env.NEXT_MINIMAL': 'false',
-    // 'process.env.NEXT_PRIVATE_MINIMAL_MODE': 'false',
     'process.env.TURBOPACK': 'false',
     'process.env.__NEXT_EXPERIMENTAL_REACT': 'true',
     __non_webpack_require__: 'require',
-    'process.env.__NEXT_PRIVATE_STANDALONE_CONFIG': JSON.stringify(nextConfigStr)
+    'process.env.__NEXT_PRIVATE_STANDALONE_CONFIG': JSON.stringify(nextConfigStr),
+    'process.env.NEXT_PRIVATE_DEBUG_CACHE': 'true',
+    'process.env.SUSPENSE_CACHE_URL': '"suspense-cache"'
   },
   platform: 'node',
   metafile: true,
@@ -104,28 +149,37 @@ const result = await esbuild.build({
     js: `
 globalThis.__dirname ??= "";
 
+function patchInit(init) {
+  return init ? {
+    ...init,
+    cache: undefined,
+    body: init.body instanceof Readable ? Readable.toWeb(init.body) : init.body
+  } : init;
+}
+
 let isPatchedAlready = globalThis.fetch.__nextPatched;
 const curFetch = globalThis.fetch;
 globalThis.fetch = (input, init) => {
-  console.log("globalThis.fetch", input);
-  if (init) delete init.cache;
-  return curFetch(input, init);
+  if (init?.next?.internal) {
+    return globalThis.INTERNAL_FETCH?.(input, init);
+  }
+  return curFetch(input, patchInit(init));
 };
 globalThis.fetch.__nextPatched = isPatchedAlready;
 fetch = globalThis.fetch;
 
 const CustomRequest = class extends globalThis.Request {
   constructor(input, init) {
-    console.log("CustomRequest", input);
-    if (init) delete init.cache;
-    super(input, init);
+    super(input, patchInit(init));
   }
 };
 globalThis.Request = CustomRequest;
 Request = globalThis.Request;
 
-globalThis.MY_FILE_CACHE = ${JSON.stringify(cacheEntries)};
-globalThis.MY_FILE_CACHE_MTIME = ${Date.now()};
+globalThis.PRERENDER_META = ${JSON.stringify(metaEntries)};
+globalThis.BUILD_ID = ${JSON.stringify(buildId)};
+globalThis.ROUTES_MANIFEST = ${routesManifest};
+globalThis.PRERENDER_MANIFEST = ${prerenderManifest};
     `
   }
 });
@@ -137,7 +191,7 @@ contents = contents.replace(/__require\d?\(/g, 'require(').replace(/__require\d?
 contents = contents.replace(
   'getBuildId() {',
   `getBuildId() {
-    return ${JSON.stringify(readFileSync(NEXT_DIR + '/BUILD_ID', 'utf-8').trim())};
+    return ${JSON.stringify(buildId)};
   `
 );
 
@@ -161,24 +215,6 @@ contents = contents.replace(
   `
 );
 
-const pagesManifestFile = NEXT_SERVER_DIR + '/pages-manifest.json';
-const appPathsManifestFile = NEXT_SERVER_DIR + '/app-paths-manifest.json';
-
-const pagesManifestFiles = existsSync(pagesManifestFile)
-  ? Object.values(JSON.parse(readFileSync(pagesManifestFile, 'utf-8'))).map(
-      (file) => '.next/server/' + file
-    )
-  : [];
-const appPathsManifestFiles = existsSync(appPathsManifestFile)
-  ? Object.values(JSON.parse(readFileSync(appPathsManifestFile, 'utf-8'))).map(
-      (file) => '.next/server/' + file
-    )
-  : [];
-const allManifestFiles = pagesManifestFiles.concat(appPathsManifestFiles);
-
-const htmlPages = allManifestFiles.filter((file) => file.endsWith('.html'));
-const pageModules = allManifestFiles.filter((file) => file.endsWith('.js'));
-
 contents = contents.replace(
   /const pagePath = getPagePath\(.+?\);/,
   `$&
@@ -186,7 +222,7 @@ contents = contents.replace(
     .map(
       (htmlPage) => `
         if (pagePath.endsWith("${htmlPage}")) {
-          return ${JSON.stringify(readFileSync(APP_BASE_DIR + '/' + htmlPage, 'utf-8'))};
+          return globalThis.ASSET_READ?.("${htmlPage.replace(/^\.next\/server\//, '')}");
         }
       `
     )
@@ -207,26 +243,6 @@ contents = contents.replace(
 contents = contents.replace(
   'require(this.middlewareManifestPath)',
   `require("${NEXT_SERVER_DIR}/middleware-manifest.json")`
-);
-
-contents = contents.replace(
-  /if \(cacheHandler\) {.+?CacheHandler = .+?}/s,
-  `
-  CacheHandler = null;
-  `
-);
-
-contents = contents.replace(
-  / ([a-zA-Z0-9_]+) = require\("url"\);/g,
-  ` $1 = require("url");
-    const nodeUrl = require("node-url");
-    $1.parse = nodeUrl.parse.bind(nodeUrl);
-    $1.format = nodeUrl.format.bind(nodeUrl);
-    $1.pathToFileURL = (path) => {
-      console.log("url.pathToFileURL", path);
-      return new URL("file://" + path);
-    }
-  `
 );
 
 const HAS_APP_DIR = existsSync(NEXT_SERVER_DIR + '/app');
@@ -271,8 +287,8 @@ contents = contents.replace(
                   '_client-reference-manifest.js',
                   ''
                 )}": globalThis.__RSC_MANIFEST["${manifestJs
-        .replace('.next/server/app', '')
-        .replace('_client-reference-manifest.js', '')}"],
+                .replace('.next/server/app', '')
+                .replace('_client-reference-manifest.js', '')}"],
             },
           };
         }
@@ -303,14 +319,6 @@ contents = contents.replace(
 contents = contents.replace(
   /result = await this.renderHTML\(.+?\);/,
   'result = { metadata: { isNotFound: true } };'
-);
-
-// Try to use incremental cache
-contents = contents.replace('cachedResponse = !this.minimalMode', 'cachedResponse = true');
-
-contents = contents.replace(
-  'if (!cachedData.postponed || this.minimalMode)',
-  'if (!cachedData.postponed)'
 );
 
 contents = contents.replace(

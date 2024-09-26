@@ -14,7 +14,7 @@ import { cookies } from 'next/headers';
 async function AddToCartFromCookies() {
   // Get the cart count from the users cookies and pass it to the client
   // AddToCart component
-  const cartCount = Number(cookies().get('_cart_count')?.value || '0');
+  const cartCount = Number((await cookies()).get('_cart_count')?.value || '0');
   return <AddToCart initialCartCount={cartCount} />;
 }
 
@@ -43,7 +43,7 @@ async function UserSpecificDetails({ productId }: { productId: string }) {
       {
         // We intentionally disable Next.js Cache to better demo
         // streaming
-        cache: 'no-store',
+        cache: 'no-store'
       }
     ),
     delayShippingEstimate
@@ -56,13 +56,9 @@ async function UserSpecificDetails({ productId }: { productId: string }) {
   return (
     <>
       <ProductSplitPayments price={price} />
-      {product.usedPrice ? (
-        <ProductUsedPrice usedPrice={product.usedPrice} />
-      ) : null}
+      {product.usedPrice ? <ProductUsedPrice usedPrice={product.usedPrice} /> : null}
       <ProductEstimatedArrival leadTime={product.leadTime} hasDeliveryTime />
-      {product.stock <= 1 ? (
-        <ProductLowStockWarning stock={product.stock} />
-      ) : null}
+      {product.stock <= 1 ? <ProductLowStockWarning stock={product.stock} /> : null}
     </>
   );
 }

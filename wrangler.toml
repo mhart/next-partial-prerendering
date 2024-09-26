@@ -1,14 +1,18 @@
 #:schema node_modules/wrangler/config-schema.json
 name = "next-ppr"
 main = ".next/standalone/worker.mjs"
-legacy_assets = ".next/assets"
-compatibility_date = "2024-09-01"
-compatibility_flags = ["nodejs_compat_v2"]
+compatibility_date = "2024-09-26"
+compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 minify = false
 
-# [experimental_assets]
-# directory = ".next/assets"
+[assets]
+directory = ".next/assets"
+binding = "ASSETS"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "2a4049e4e34a4a21959be1e388eebc80"
 
 [alias]
 "critters" = "./scripts/shim-throw.mjs"
