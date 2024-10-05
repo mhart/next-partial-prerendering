@@ -3,20 +3,20 @@ const nextConfig = {
   /// start
   experimental: {
     serverMinification: false,
-    ppr: true,
+    ppr: true
   },
-  webpack: (config) => {
-    config.optimization.minimize = false;
-    return config;
-  },
+  // webpack: (config) => {
+  //   config.optimization.minimize = false;
+  //   return config;
+  // },
   compress: false,
   /// end
 
   poweredByHeader: false,
   output: 'standalone',
   eslint: {
-    ignoreDuringBuilds: true,
-  },
+    ignoreDuringBuilds: true
+  }
 };
 
 module.exports = nextConfig;
