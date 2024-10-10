@@ -3,4 +3,5 @@
 interface Env {
   CACHE: KVNamespace;
   ASSETS: Fetcher;
+  // UNSAFE_PERFORMANCE: { now: () => number };
 }

@@ -121,6 +121,12 @@ export default {
         );
       }
 
+      if (request.method === 'HEAD') {
+        return new Response(null, {
+          status: cacheResponse.status,
+          headers: cacheResponse.headers
+        });
+      }
       return cacheResponse;
     }
 
@@ -129,28 +135,35 @@ export default {
 };
 
 function getMatchedPath(request: Request) {
-  const url = new URL(request.url);
+  const { pathname } = new URL(request.url);
 
   let matchedPath = '';
-  for (const route of routeManifest.staticRoutes) {
-    if (new RegExp(route.regex).test(url.pathname)) {
-      matchedPath = route.page;
-      break;
+  if (request.method === 'POST' && pathname.startsWith('/_next/postponed/resume/')) {
+    // TODO: bit of a hack here to just set the matched path for resume requests
+    // Question: should we even allow these from outside? Or only by service bindings?
+    matchedPath = pathname;
+  }
+  if (!matchedPath) {
+    for (const route of routeManifest.staticRoutes) {
+      if (new RegExp(route.regex).test(pathname)) {
+        matchedPath = route.page;
+        break;
+      }
     }
   }
   if (!matchedPath) {
     for (const route of routeManifest.dynamicRoutes) {
-      if (new RegExp(route.regex).test(url.pathname)) {
+      if (new RegExp(route.regex).test(pathname)) {
         matchedPath = route.page;
         break;
       }
     }
   }
 
-  const isRscRequest = !!request.headers.get('rsc') || url.pathname.endsWith('.rsc');
+  const isRscRequest = !!request.headers.get('rsc') || pathname.endsWith('.rsc');
 
   if (matchedPath && isRscRequest && !matchedPath.endsWith('.rsc')) {
-    matchedPath = url.pathname === '/' ? '/index.rsc' : matchedPath + '.rsc';
+    matchedPath = pathname === '/' ? '/index.rsc' : matchedPath + '.rsc';
   }
 
   return matchedPath;
@@ -245,8 +258,6 @@ function getWrappedStreams(request: Request, ctx: ExecutionContext) {
     req,
     webResponse: async () => {
       await res.headPromise;
-      // TODO: remove this once streaming with compression is working nicely
-      res.setHeader('content-encoding', 'identity');
       return new Response(NON_BODY_RESPONSES.has(res.statusCode) ? null : readable, {
         status: res.statusCode,
         headers: (res as any).headers

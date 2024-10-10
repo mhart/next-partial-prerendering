@@ -5,10 +5,6 @@ const nextConfig = {
     serverMinification: false,
     ppr: true
   },
-  // webpack: (config) => {
-  //   config.optimization.minimize = false;
-  //   return config;
-  // },
   compress: false,
   /// end
 

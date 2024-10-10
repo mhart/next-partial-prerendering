@@ -5,8 +5,14 @@
     "dev": "next dev --turbo",
     "start": "next start",
     "build:worker": "NODE_ENV=production node scripts/build.mjs",
-    "preview": "npm run build:worker && NODE_ENV=production wrangler dev --x-dev-env=false",
-    "deploy": "NODE_ENV=production wrangler deploy"
+    "preview": "npm run build:worker && NODE_ENV=production wrangler dev",
+    "deploy": "npm run build:worker && NODE_ENV=production wrangler deploy",
+    "preview:front": "npm run build:worker && wrangler dev -c wrangler.front.toml",
+    "deploy:front": "npm run build:worker && wrangler deploy -c wrangler.front.toml",
+    "pages:pre": "npm run build:worker && cp .next/server/app/index.meta .next/server/app/index.meta.json && cp pages/_worker.js .next/assets/ && cp wrangler.toml wrangler.main.toml && cp wrangler.pages.toml wrangler.toml",
+    "pages:post": "rm .next/assets/_worker.js; mv wrangler.main.toml wrangler.toml",
+    "preview:pages": "npm run pages:pre && wrangler pages dev; npm run pages:post",
+    "deploy:pages": "npm run pages:pre && wrangler pages deploy; npm run pages:post"
   },
   "dependencies": {
     "@heroicons/react": "2.1.5",
@@ -31,6 +37,6 @@
     "tailwindcss": "3.4.5",
     "typescript": "5.5.3",
     "vercel": "^37.5.4",
-    "wrangler": "^3.80.0"
+    "wrangler": "^3.80.2"
   }
 }
