@@ -4455,7 +4455,7 @@
       "format": "cjs"
     },
     "scripts/cache.ts": {
-      "bytes": 10965,
+      "bytes": 11124,
       "imports": [
         {
           "path": "next/dist/server/next-server",
@@ -4471,7 +4471,7 @@
       "format": "esm"
     },
     "scripts/index.ts": {
-      "bytes": 7333,
+      "bytes": 7528,
       "imports": [
         {
           "path": "node:stream",
@@ -5271,13 +5271,13 @@
           "bytesInOutput": 53481
         },
         "scripts/index.ts": {
-          "bytesInOutput": 10256
+          "bytesInOutput": 10528
         },
         "scripts/cache.ts": {
-          "bytesInOutput": 9110
+          "bytesInOutput": 9227
         }
       },
-      "bytes": 787692
+      "bytes": 788081
     }
   }
 }

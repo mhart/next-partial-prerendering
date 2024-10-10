@@ -110,6 +110,17 @@ export async function createPprResponse(
     .replace(/\.(prefetch\.rsc|rsc|html)$/, '.meta');
   const { postponed } = (globalThis as any).PRERENDER_META[metaKey];
 
+  const headers = new Headers(cacheResponse.headers);
+  // PPR responses are actually dynamic – they shouldn't have etags
+  headers.delete('etag');
+
+  if (request.method === 'HEAD') {
+    return new Response(null, {
+      status: cacheResponse.status,
+      headers
+    });
+  }
+
   const postponePath = '/_next/postponed/resume' + (url.pathname === '/' ? '/index' : url.pathname);
   const postponeRequest = new Request(new URL(postponePath, request.url), {
     method: 'POST',
@@ -144,12 +155,6 @@ export async function createPprResponse(
       writer.close();
     })()
   );
-
-  const headers = new Headers(cacheResponse.headers);
-  headers.delete('etag');
-
-  // TODO: hack for wrangler local dev streaming
-  headers.set('content-encoding', 'identity');
 
   return new Response(readable, {
     status: cacheResponse.status,
@@ -203,15 +208,17 @@ export async function getCachedResponse(
   const assetSuffix = isRscRequest
     ? '.rsc' // (meta?.postponed ? '.prefetch.rsc' : '.rsc')
     : !initialHeaders['content-type'] || initialHeaders['content-type'].startsWith('text/html')
-      ? '.html'
-      : '.body';
+    ? '.html'
+    : '.body';
 
   const cacheKey = (globalThis as any).BUILD_ID + ':' + assetPrefix + assetSuffix;
-  const entry = await env.CACHE.get<{
-    status: number;
-    headers: Record<string, string>;
-    body: string;
-  }>(cacheKey, { type: 'json' });
+  const entry = prerender.experimentalPPR // We're not putting PPR in cache for now, so don't try, will just 404
+    ? null
+    : await env.CACHE.get<{
+        status: number;
+        headers: Record<string, string>;
+        body: string;
+      }>(cacheKey, { type: 'json' });
   if (entry) {
     let { status = 200, headers = {} } = entry;
     const body = headers['content-type']?.startsWith('text/')

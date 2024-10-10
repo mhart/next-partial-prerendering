@@ -1,0 +1,15 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "ppr"
+main = "scripts/front.ts"
+compatibility_date = "2024-10-05"
+workers_dev = true
+minify = true
+
+[[rules]]
+type = "Text"
+globs = ["**/*.meta"]
+fallthrough = true
+
+[[services]]
+binding = "BACKEND"
+service = "next-ppr"
