@@ -3,7 +3,8 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev --turbo",
-    "start": "next start"
+    "start": "next start",
+    "deploy": "gcloud run deploy ppr --allow-unauthenticated --source ."
   },
   "dependencies": {
     "@heroicons/react": "2.1.5",
