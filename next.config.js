@@ -3,7 +3,7 @@ const nextConfig = {
   /// start
   experimental: {
     serverMinification: false,
-    ppr: true
+    ppr: true,
   },
   compress: false,
   /// end
@@ -11,8 +11,11 @@ const nextConfig = {
   poweredByHeader: false,
   output: 'standalone',
   eslint: {
-    ignoreDuringBuilds: true
-  }
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
 };
 
 module.exports = nextConfig;

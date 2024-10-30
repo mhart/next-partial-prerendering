@@ -9,7 +9,7 @@
     "deploy": "npm run build:worker && NODE_ENV=production wrangler deploy",
     "preview:front": "npm run build:worker && wrangler dev -c wrangler.front.toml",
     "deploy:front": "npm run build:worker && wrangler deploy -c wrangler.front.toml",
-    "pages:pre": "npm run build:worker && cp .next/server/app/index.meta .next/server/app/index.meta.json && cp pages/_worker.js .next/assets/ && cp wrangler.toml wrangler.main.toml && cp wrangler.pages.toml wrangler.toml",
+    "pages:pre": "npm run build:worker && cp .next/server/app/index.meta .next/server/app/index.meta.json && cp scripts/pages/_worker.js .next/assets/ && cp wrangler.toml wrangler.main.toml && cp wrangler.pages.toml wrangler.toml",
     "pages:post": "rm .next/assets/_worker.js; mv wrangler.main.toml wrangler.toml",
     "preview:pages": "npm run pages:pre && wrangler pages dev; npm run pages:post",
     "deploy:pages": "npm run pages:pre && wrangler pages deploy; npm run pages:post"

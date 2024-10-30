@@ -38,18 +38,17 @@ export default {
       const { readable, writable } = new IdentityTransformStream();
       const writer = writable.getWriter();
 
-      const indexResponse = await indexPromise;
-      if (!indexResponse.ok) {
-        console.error('Not ok', indexResponse.status);
-        console.error(await indexResponse.text());
-      } else if (indexResponse.body != null) {
-        // @ts-expect-error
-        for await (const chunk of indexResponse.body) {
-          writer.write(chunk);
+      const doIndexAndPostponeFetch = async () => {
+        const indexResponse = await indexPromise;
+        if (!indexResponse.ok) {
+          console.error('Not ok', indexResponse.status);
+          console.error(await indexResponse.text());
+        } else if (indexResponse.body != null) {
+          // @ts-expect-error
+          for await (const chunk of indexResponse.body) {
+            writer.write(chunk);
+          }
         }
-      }
-
-      const doPostponeFetch = async () => {
         const postponeResponse = await postponePromise;
         if (!postponeResponse.ok) {
           console.error('Not ok', postponeResponse.status);
@@ -63,7 +62,7 @@ export default {
         writer.close();
       };
 
-      ctx.waitUntil(doPostponeFetch());
+      ctx.waitUntil(doIndexAndPostponeFetch());
 
       return new Response(readable, { headers });
     }
